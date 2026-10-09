@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
-from app.schemas.dashboard import DashboardRead
+from app.schemas.dashboard import DashboardRead, HeatmapRead
 from app.services import budget_service
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
@@ -21,3 +21,10 @@ def dashboard(
             detail="No budget set for this month",
         )
     return data
+
+@router.get("/heatmap", response_model=HeatmapRead)
+def heatmap(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return budget_service.get_heatmap(db, current_user.id)

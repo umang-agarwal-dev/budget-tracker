@@ -1,4 +1,5 @@
 import calendar
+import math
 import datetime
 from decimal import Decimal
 
@@ -62,3 +63,34 @@ def get_dashboard(db: Session, user_id: int) -> dict | None:
         "days_left": (month_end() - datetime.date.today()).days + 1,
         "overspent": spent > budget.amount,
     }
+
+def _level(total: Decimal, max_total: Decimal) -> int:
+    if total <= 0 or max_total <= 0:
+        return 0
+    return min(4, max(1, math.ceil(total / max_total * 4)))
+
+
+def get_heatmap(db: Session, user_id: int) -> dict:
+    start = current_month()
+    end = month_end()
+
+    rows = db.execute(
+        select(Expense.date, func.sum(Expense.amount))
+        .where(
+            Expense.user_id == user_id,
+            Expense.date >= start,
+            Expense.date <= end,
+        )
+        .group_by(Expense.date)
+    ).all()
+
+    totals = {day: Decimal(total) for day, total in rows}
+    max_total = max(totals.values(), default=Decimal(0))
+
+    days = []
+    for n in range(end.day):
+        day = start + datetime.timedelta(days=n)
+        total = totals.get(day, Decimal(0))
+        days.append({"date": day, "total": total, "level": _level(total, max_total)})
+
+    return {"month": start, "max_day_total": max_total, "days": days}
