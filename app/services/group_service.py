@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.models.group import Group, GroupMember
+from app.models.group import Group, GroupMember, Settlement
 from app.models.user import User
 
 MAX_MEMBERS = 20
@@ -69,6 +69,8 @@ def list_members(db: Session, group_id: int) -> list[GroupMember]:
 
 
 def join_group(db: Session, group: Group, name: str) -> GroupMember:
+    if is_finalized(db, group.id):
+     raise JoinError("This group is already settled")
     members = list_members(db, group.id)
     if len(members) >= MAX_MEMBERS:
         raise JoinError("This group is full")
@@ -112,3 +114,13 @@ def get_member_by_user(
             GroupMember.group_id == group_id, GroupMember.user_id == user_id
         )
     )
+
+def is_finalized(db: Session, group_id: int) -> bool:
+    return (
+        db.scalar(select(Settlement.id).where(Settlement.group_id == group_id))
+        is not None
+    )
+
+
+def get_group(db: Session, group_id: int) -> Group | None:
+    return db.get(Group, group_id)

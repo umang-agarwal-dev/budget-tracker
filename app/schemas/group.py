@@ -56,3 +56,25 @@ class GroupExpenseRead(BaseModel):
     date: datetime.date
     paid_by_id: int
     paid_by_name: str
+
+class PaymentRead(BaseModel):
+    from_id: int
+    from_name: str
+    to_id: int
+    to_name: str
+    amount: Decimal
+
+
+class BalanceRead(BaseModel):
+    member_id: int
+    name: str
+    balance: Decimal
+
+
+class SettlementRead(BaseModel):
+    group_name: str
+    generated_at: datetime.datetime
+    total_spent: Decimal
+    balances: list[BalanceRead]
+    payments: list[PaymentRead]
+    message: str

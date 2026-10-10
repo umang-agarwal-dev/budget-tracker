@@ -14,6 +14,8 @@ from app.schemas.group import (
     MemberJoin,
 )
 from app.services import group_expense_service, group_service
+from app.schemas.group import SettlementRead
+from app.services import settlement_service
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -89,9 +91,11 @@ def add_group_expense(
     db: Session = Depends(get_db),
     member: GroupMember = Depends(get_group_member),
 ):
+    if group_service.is_finalized(db, group_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This group is already settled")
+
     expense = group_expense_service.add_expense(db, group_id, member, data)
     return group_expense_service.expense_view(expense, member.name)
-
 
 @router.get("/{group_id}/expenses", response_model=list[GroupExpenseRead])
 def list_group_expenses(
@@ -111,6 +115,8 @@ def delete_group_expense(
     db: Session = Depends(get_db),
     member: GroupMember = Depends(get_group_member),
 ):
+    if group_service.is_finalized(db, group_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This group is already settled")
     expense = group_expense_service.get_expense(db, group_id, expense_id)
     if expense is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Expense not found")
@@ -119,3 +125,6 @@ def delete_group_expense(
             status.HTTP_403_FORBIDDEN, "You can only delete your own expenses"
         )
     group_expense_service.delete_expense(db, expense)
+
+    if group_service.is_finalized(db, group_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This group is already settled")
