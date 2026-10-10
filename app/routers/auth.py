@@ -5,9 +5,9 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_db, get_current_user
 from app.models.user import User
 from app.core.security import create_access_token
-from app.schemas.token import Token
+from app.schemas.token import GoogleLogin, Token
+from app.services import google_auth_service, user_service
 from app.schemas.user import UserCreate, UserRead
-from app.services import user_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -38,3 +38,16 @@ def login(
 @router.get("/me", response_model=UserRead)
 def me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.post("/google", response_model=Token)
+def google_login(data: GoogleLogin, db: Session = Depends(get_db)):
+    try:
+        info = google_auth_service.verify_google_token(data.id_token)
+    except google_auth_service.InvalidGoogleTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token",
+        )
+    name = info.get("name") or info["email"].split("@")[0]
+    user = user_service.get_or_create_google_user(db, info["email"], name)
+    return Token(access_token=create_access_token(user.id))

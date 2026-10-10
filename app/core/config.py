@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-2.5-flash"
     AI_DAILY_LIMIT: int = 2
     FRONTEND_URL: str = "http://localhost:3000"
+    GOOGLE_CLIENT_ID: str
 
     model_config = SettingsConfigDict(env_file=".env")
 
