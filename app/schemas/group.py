@@ -1,7 +1,8 @@
+import datetime
+from decimal import Decimal
 from typing import Annotated
 
-from pydantic import BaseModel, StringConstraints
-
+from pydantic import BaseModel, Field, StringConstraints
 Name = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)
 ]
@@ -39,3 +40,19 @@ class JoinResult(BaseModel):
     name: str
     member_token: str
     group_name: str
+
+class GroupExpenseCreate(BaseModel):
+    amount: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    description: Annotated[
+        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)
+    ]
+    date: datetime.date | None = None
+
+
+class GroupExpenseRead(BaseModel):
+    id: int
+    amount: Decimal
+    description: str
+    date: datetime.date
+    paid_by_id: int
+    paid_by_name: str

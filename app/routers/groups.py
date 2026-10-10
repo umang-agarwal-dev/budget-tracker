@@ -1,16 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user, get_db
+from app.core.deps import get_current_user, get_db, get_group_member
+from app.models.group import GroupMember
 from app.models.user import User
 from app.schemas.group import (
     GroupCreate,
+    GroupExpenseCreate,
+    GroupExpenseRead,
     GroupPreview,
     GroupRead,
     JoinResult,
     MemberJoin,
 )
-from app.services import group_service
+from app.services import group_expense_service, group_service
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -74,3 +77,45 @@ def get_group(
     if group is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Group not found")
     return group_service.group_view(db, group)
+
+@router.post(
+    "/{group_id}/expenses",
+    response_model=GroupExpenseRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_group_expense(
+    group_id: int,
+    data: GroupExpenseCreate,
+    db: Session = Depends(get_db),
+    member: GroupMember = Depends(get_group_member),
+):
+    expense = group_expense_service.add_expense(db, group_id, member, data)
+    return group_expense_service.expense_view(expense, member.name)
+
+
+@router.get("/{group_id}/expenses", response_model=list[GroupExpenseRead])
+def list_group_expenses(
+    group_id: int,
+    db: Session = Depends(get_db),
+    _: GroupMember = Depends(get_group_member),
+):
+    return group_expense_service.list_expenses(db, group_id)
+
+
+@router.delete(
+    "/{group_id}/expenses/{expense_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_group_expense(
+    group_id: int,
+    expense_id: int,
+    db: Session = Depends(get_db),
+    member: GroupMember = Depends(get_group_member),
+):
+    expense = group_expense_service.get_expense(db, group_id, expense_id)
+    if expense is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Expense not found")
+    if expense.paid_by != member.id:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "You can only delete your own expenses"
+        )
+    group_expense_service.delete_expense(db, expense)

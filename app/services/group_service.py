@@ -93,3 +93,22 @@ def group_view(db: Session, group: Group) -> dict:
         "invite_link": f"{settings.FRONTEND_URL}/join/{group.invite_token}",
         "members": list_members(db, group.id),
     }
+
+def get_member_by_token(
+    db: Session, group_id: int, token: str
+) -> GroupMember | None:
+    return db.scalar(
+        select(GroupMember).where(
+            GroupMember.group_id == group_id, GroupMember.member_token == token
+        )
+    )
+
+
+def get_member_by_user(
+    db: Session, group_id: int, user_id: int
+) -> GroupMember | None:
+    return db.scalar(
+        select(GroupMember).where(
+            GroupMember.group_id == group_id, GroupMember.user_id == user_id
+        )
+    )
