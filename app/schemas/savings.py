@@ -42,3 +42,5 @@ class LogRead(BaseModel):
 
 class AdviceRead(BaseModel):
     advice: str
+    remaining_today: int
+    source: str

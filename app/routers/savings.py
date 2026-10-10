@@ -4,7 +4,9 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
 from app.schemas.savings import AdviceRead, GoalCreate, GoalRead, LogCreate, LogRead
-from app.services import ai_service, savings_service
+from app.services import ai_service, savings_service,ai_usage_service
+from app.core.config import settings
+
 
 router = APIRouter(prefix="/savings", tags=["savings"])
 
@@ -56,6 +58,7 @@ def add_log(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Goal not found")
     return savings_service.add_log(db, goal, data)
 
+
 @router.get("/goals/{goal_id}/advice", response_model=AdviceRead)
 def goal_advice(
     goal_id: int,
@@ -66,6 +69,12 @@ def goal_advice(
     if goal is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Goal not found")
 
+    if ai_usage_service.remaining_today(db, current_user.id) == 0:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            f"Daily limit reached ({settings.AI_DAILY_LIMIT} per day). Try again tomorrow.",
+        )
+
     facts = savings_service.build_advice_facts(db, current_user.id, goal)
     if facts is None:
         raise HTTPException(
@@ -74,9 +83,14 @@ def goal_advice(
 
     try:
         advice = ai_service.savings_advice(facts)
+        ai_usage_service.record_usage(db, current_user.id, goal.id, advice)
+        source = "ai"
     except ai_service.AIUnavailableError:
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE,
-            "AI suggestions are unavailable right now. Try again later.",
-        )
-    return {"advice": advice}
+        advice = ai_service.fallback_advice(facts)
+        source = "basic"
+
+    return {
+        "advice": advice,
+        "remaining_today": ai_usage_service.remaining_today(db, current_user.id),
+        "source": source,
+    }

@@ -3,7 +3,10 @@ from google.genai import types
 
 from app.core.config import settings
 
-client = genai.Client(api_key=settings.GEMINI_API_KEY)
+client = genai.Client(
+    api_key=settings.GEMINI_API_KEY,
+    http_options=types.HttpOptions(timeout=15000),
+)
 
 SYSTEM_PROMPT = (
     "You are a friendly, practical budgeting coach for college students in India. "
@@ -57,3 +60,22 @@ Keep it under 6 short lines."""
     if not response.text:
         raise AIUnavailableError
     return response.text.strip()
+
+def fallback_advice(facts: dict) -> str:
+    cats = facts["top_categories"]
+    if not cats:
+        return "Add a few expenses and we'll show you where you can cut back."
+    top = cats[0]
+    if facts["shortfall"] > 0:
+        return (
+            f"To hit your goal you need to free up about ₹{facts['shortfall']} a month. "
+            f"Your biggest spend is {top['category']} (₹{top['spent']}); "
+            f"Cutting it by 20% would save about ₹{top['cut_20']}."
+        )
+    if facts["overspending"]:
+        return (
+            f"You're on pace to go over budget this month. "
+            f"Your biggest spend is {top['category']} (₹{top['spent']}); "
+            f"cutting it by 10% would save about ₹{top['cut_10']}."
+        )
+    return "You're on track this month. Keep it up!"
