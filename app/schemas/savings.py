@@ -39,3 +39,6 @@ class LogRead(BaseModel):
     date: datetime.date
 
     model_config = {"from_attributes": True}
+
+class AdviceRead(BaseModel):
+    advice: str

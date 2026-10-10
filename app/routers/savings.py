@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
-from app.schemas.savings import GoalCreate, GoalRead, LogCreate, LogRead
-from app.services import savings_service
+from app.schemas.savings import AdviceRead, GoalCreate, GoalRead, LogCreate, LogRead
+from app.services import ai_service, savings_service
 
 router = APIRouter(prefix="/savings", tags=["savings"])
 
@@ -55,3 +55,28 @@ def add_log(
     if goal is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Goal not found")
     return savings_service.add_log(db, goal, data)
+
+@router.get("/goals/{goal_id}/advice", response_model=AdviceRead)
+def goal_advice(
+    goal_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    goal = savings_service.get_goal(db, current_user.id, goal_id)
+    if goal is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Goal not found")
+
+    facts = savings_service.build_advice_facts(db, current_user.id, goal)
+    if facts is None:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST, "Set a monthly budget first"
+        )
+
+    try:
+        advice = ai_service.savings_advice(facts)
+    except ai_service.AIUnavailableError:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "AI suggestions are unavailable right now. Try again later.",
+        )
+    return {"advice": advice}

@@ -94,3 +94,19 @@ def get_heatmap(db: Session, user_id: int) -> dict:
         days.append({"date": day, "total": total, "level": _level(total, max_total)})
 
     return {"month": start, "max_day_total": max_total, "days": days}
+
+def get_category_totals(
+    db: Session, user_id: int, limit: int = 3
+) -> list[tuple[str, Decimal]]:
+    rows = db.execute(
+        select(Expense.category, func.sum(Expense.amount))
+        .where(
+            Expense.user_id == user_id,
+            Expense.date >= current_month(),
+            Expense.date <= month_end(),
+        )
+        .group_by(Expense.category)
+        .order_by(func.sum(Expense.amount).desc())
+        .limit(limit)
+    ).all()
+    return [(category, Decimal(total)) for category, total in rows]
