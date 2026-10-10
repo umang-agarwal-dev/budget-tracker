@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status,Request
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, get_db, get_group_member
@@ -16,6 +16,7 @@ from app.schemas.group import (
 from app.services import group_expense_service, group_service
 from app.schemas.group import SettlementRead
 from app.services import settlement_service
+from app.core.limiter import limiter
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -53,7 +54,10 @@ def preview_group(token: str, db: Session = Depends(get_db)):
 @router.post(
     "/join/{token}", response_model=JoinResult, status_code=status.HTTP_201_CREATED
 )
-def join_group(token: str, data: MemberJoin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def join_group(
+    request: Request, token: str, data: MemberJoin, db: Session = Depends(get_db)
+):
     group = group_service.get_group_by_token(db, token)
     if group is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Invalid invite link")

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
@@ -8,12 +8,14 @@ from app.core.security import create_access_token
 from app.schemas.token import GoogleLogin, Token
 from app.services import google_auth_service, user_service
 from app.schemas.user import UserCreate, UserRead
+from app.core.limiter import limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
-def register(data: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, data: UserCreate, db: Session = Depends(get_db)):
     if user_service.get_user_by_email(db, data.email):
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -22,7 +24,9 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
     return user_service.create_user(db, data)
 
 @router.post("/login", response_model=Token)
+@limiter.limit("5/minute")
 def login(
+    request: Request,
     form: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db),
 ):
@@ -40,7 +44,8 @@ def me(current_user: User = Depends(get_current_user)):
     return current_user
 
 @router.post("/google", response_model=Token)
-def google_login(data: GoogleLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def google_login(request: Request, data: GoogleLogin, db: Session = Depends(get_db)):
     try:
         info = google_auth_service.verify_google_token(data.id_token)
     except google_auth_service.InvalidGoogleTokenError:
