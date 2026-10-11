@@ -131,3 +131,10 @@ def test_join_returns_group_id_so_guests_can_use_the_group(client, make_user):
 
     assert client.get(f"/groups/join/{token}").json()["group_id"] == group_id
     assert join(client, token, "Rahul")["group_id"] == group_id
+
+def test_admin_can_unlock_a_settled_group(client, make_user):
+    headers = make_user()
+    group_id, _, _, _ = settled_group(client, headers)
+    assert client.post(f"/groups/{group_id}/unlock", headers=headers).status_code == 204
+    again = client.post(f"/groups/{group_id}/expenses", json={"amount": 100, "description": "late"}, headers=headers)
+    assert again.status_code == 201

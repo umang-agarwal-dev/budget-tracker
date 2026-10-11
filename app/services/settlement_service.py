@@ -125,3 +125,11 @@ def settlement_view(group: Group, settlement: Settlement) -> dict:
         "payments": result["payments"],
         "message": message,
     }
+
+def unlock(db: Session, group_id: int) -> bool:
+    settlement = get_settlement(db, group_id)
+    if settlement is None:
+        return False
+    db.delete(settlement)
+    db.commit()
+    return True

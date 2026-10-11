@@ -174,3 +174,17 @@ def get_settlement(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Not settled yet")
     group = group_service.get_group(db, group_id)
     return settlement_service.settlement_view(group, settlement)
+
+@router.post("/{group_id}/unlock", status_code=status.HTTP_204_NO_CONTENT)
+def unlock_group(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    group = group_service.get_group_for_user(db, current_user.id, group_id)
+    if group is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Group not found")
+    if group.created_by != current_user.id:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Only the group admin can unlock")
+    if not settlement_service.unlock(db, group_id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "This group is not settled")
