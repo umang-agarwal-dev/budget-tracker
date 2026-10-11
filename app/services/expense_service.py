@@ -29,3 +29,13 @@ def list_expenses(db: Session, user_id: int) -> list[Expense]:
             .order_by(Expense.date.desc(), Expense.id.desc())
         )
     )
+
+def delete_expense(db: Session, user_id: int, expense_id: int) -> bool:
+    expense = db.scalar(
+        select(Expense).where(Expense.id == expense_id, Expense.user_id == user_id)
+    )
+    if expense is None:
+        return False
+    db.delete(expense)
+    db.commit()
+    return True

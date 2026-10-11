@@ -45,6 +45,7 @@ def preview_group(token: str, db: Session = Depends(get_db)):
     if group is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Invalid invite link")
     return {
+        "group_id": group.id,
         "name": group.name,
         "member_count": len(group_service.list_members(db, group.id)),
     }
@@ -65,6 +66,7 @@ def join_group(
     except group_service.JoinError as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
     return {
+        "group_id": group.id,
         "member_id": member.id,
         "name": member.name,
         "member_token": member.member_token,

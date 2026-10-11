@@ -70,3 +70,14 @@ def test_heatmap_marks_biggest_day_darkest(client, make_user):
     assert len(data["days"]) == calendar.monthrange(today.year, today.month)[1]
     day = next(d for d in data["days"] if d["date"] == today.isoformat())
     assert day["level"] == 4
+
+def test_user_can_delete_only_their_own_expense(client, make_user):
+    alice = make_user("a@example.com", "Alice")
+    bob = make_user("b@example.com", "Bob")
+    expense = client.post(
+        "/expenses", json={"amount": 100, "category": "food"}, headers=alice
+    ).json()
+
+    assert client.delete(f"/expenses/{expense['id']}", headers=bob).status_code == 404
+    assert client.delete(f"/expenses/{expense['id']}", headers=alice).status_code == 204
+    assert client.get("/expenses", headers=alice).json() == []

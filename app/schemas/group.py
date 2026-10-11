@@ -31,11 +31,13 @@ class GroupRead(BaseModel):
 
 
 class GroupPreview(BaseModel):
+    group_id: int
     name: str
     member_count: int
 
 
 class JoinResult(BaseModel):
+    group_id: int
     member_id: int
     name: str
     member_token: str

@@ -124,3 +124,10 @@ def test_cannot_settle_an_empty_group(client, make_user):
     headers = make_user()
     group_id, _ = create_group(client, headers)
     assert client.post(f"/groups/{group_id}/settle", headers=headers).status_code == 400
+
+def test_join_returns_group_id_so_guests_can_use_the_group(client, make_user):
+    headers = make_user()
+    group_id, token = create_group(client, headers)
+
+    assert client.get(f"/groups/join/{token}").json()["group_id"] == group_id
+    assert join(client, token, "Rahul")["group_id"] == group_id
