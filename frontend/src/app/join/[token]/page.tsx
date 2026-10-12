@@ -1,4 +1,5 @@
 "use client";
+import Brand from "@/components/Brand";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
@@ -30,7 +31,7 @@ export default function Join() {
   return (
     <main className="auth">
       <form className="card auth-card" onSubmit={join}>
-        <div className="logo"><i>◎</i>Coinly</div>
+        <Brand />
         {info ? <h2 className="h" style={{ margin: 0 }}>Join “{info.name}”</h2> : !err && <p className="mut">Opening invite…</p>}
         {info && <p className="mut">{info.member_count} member{info.member_count === 1 ? "" : "s"} so far. Just add your name, no account needed.</p>}
         {info && <input autoFocus placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} required />}

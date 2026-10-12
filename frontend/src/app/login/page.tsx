@@ -1,7 +1,10 @@
 "use client";
+import Brand from "@/components/Brand";
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import GoogleButton from "@/components/GoogleButton";
 
 export default function Login() {
   const router = useRouter();
@@ -28,15 +31,20 @@ export default function Login() {
 
   return (
     <main className="auth">
+      <div className="auth-blob" />
       <form className="card auth-card" onSubmit={submit}>
-        <div className="logo"><i>◎</i>Coinly</div>
-        <p className="mut">Your money, your way.</p>
-        <input type="email" placeholder="Email" value={f.email} onChange={set("email")} required />
-        {mode === "register" && <input placeholder="Your name" value={f.name} onChange={set("name")} required />}
-        <input type="password" placeholder="Password (8+ characters)" minLength={8} value={f.password} onChange={set("password")} required />
+        <Link href="/" className="back">← Back to home</Link>
+        <Brand />
+        <h2 className="h" style={{ margin: "4px 0 0" }}>{mode === "login" ? "Welcome back" : "Create your Pocket"}</h2>
+        <p className="mut">{mode === "login" ? "Log in to see what's left this month." : "Free to start. Takes ten seconds."}</p>
+        <GoogleButton onError={setErr} />
+        <div className="divider"><span>or use email</span></div>
+        <input type="email" placeholder="Email" value={f.email} onChange={set("email")} required autoComplete="email" />
+        {mode === "register" && <input placeholder="Your name" value={f.name} onChange={set("name")} required autoComplete="name" />}
+        <input type="password" placeholder="Password (8+ characters)" minLength={8} value={f.password} onChange={set("password")} required autoComplete={mode === "login" ? "current-password" : "new-password"} />
         {err && <p className="err">{err}</p>}
-        <button className="btn" disabled={busy}>{busy ? "One moment…" : mode === "login" ? "Log in" : "Create account"}</button>
-        <button type="button" className="link" onClick={() => setMode(mode === "login" ? "register" : "login")}>
+        <button className="btn big" disabled={busy}>{busy ? "One moment…" : mode === "login" ? "Log in" : "Create account"}</button>
+        <button type="button" className="link" style={{ margin: "0 auto" }} onClick={() => setMode(mode === "login" ? "register" : "login")}>
           {mode === "login" ? "New here? Create an account" : "Have an account? Log in"}
         </button>
       </form>

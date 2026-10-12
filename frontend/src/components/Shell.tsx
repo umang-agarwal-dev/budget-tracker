@@ -1,11 +1,12 @@
 "use client";
+import Brand from "@/components/Brand";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import Icon from "./Icon";
 
-const ITEMS = [["/", "Home", "home"], ["/expenses", "Expenses", "list"], ["/savings", "Savings Goals", "target"], ["/splitter", "Splitter", "users"]];
+const ITEMS = [["/", "Home", "home"], ["/expenses", "Expenses", "list"], ["/savings", "Savings Goals", "target"], ["/splitter", "Splitter", "users"], ["/settings", "Settings", "sliders"]];
 
 // Sidebar + page area, like the Coinly board. Every logged-in page is wrapped in this.
 export default function Shell({ children }: { children: React.ReactNode }) {
@@ -30,14 +31,14 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   return (
     <div className="shell">
       <header className="mbar">
-        <div className="logo"><i>◎</i>Coinly</div>
+        <Brand />
         <div className="mbar-r">
           <button className={dark ? "toggle dark" : "toggle"} onClick={toggle} aria-label="Toggle theme"><Icon n="sun" size={14} /><Icon n="moon" size={14} /><i /></button>
           <button aria-label="Log out" onClick={() => { localStorage.removeItem("token"); router.replace("/login"); }}><Icon n="out" size={20} /></button>
         </div>
       </header>
       <aside className="side">
-        <div className="logo"><i>◎</i>Coinly</div>
+        <Brand />
         <nav>
           {ITEMS.map(([h, l, ic]) => (
             <Link key={h} href={h} className={on(h) ? "on" : ""}><Icon n={ic} /><span>{l}</span></Link>

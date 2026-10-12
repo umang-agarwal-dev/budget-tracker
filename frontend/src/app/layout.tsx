@@ -2,7 +2,7 @@ import "./globals.css";
 
 import type { Viewport } from "next";
 
-export const metadata = { title: "Coinly", description: "Your money, your way." };
+export const metadata = { title: "Pocket", description: "Your money, in your Pocket." };
 export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

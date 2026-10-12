@@ -1,4 +1,5 @@
 "use client";
+import Brand from "@/components/Brand";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -8,7 +9,7 @@ export default function Nav() {
   const on = (h: string) => (h === "/" ? path === "/" : h === "/splitter" ? path.startsWith("/splitter") || path.startsWith("/g/") : path.startsWith(h));
   return (
     <>
-      <div className="logo"><i>◎</i>Coinly</div>
+      <Brand />
       <nav className="links">
         {items.map(([h, l]) => <Link key={h} href={h} className={on(h) ? "on" : ""}>{l}</Link>)}
       </nav>

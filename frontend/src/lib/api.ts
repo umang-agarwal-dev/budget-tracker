@@ -15,7 +15,7 @@ export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T
     body = JSON.stringify(opts.json);
   }
   if (opts.form) body = new URLSearchParams(opts.form);
-  const res = await fetch(API + path, { method: opts.method ?? "GET", headers, body });
+  const res = await fetch(API + path, { method: opts.method ?? "GET", headers, body, cache: "no-store" });
   if (res.status === 204) return undefined as T;
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {

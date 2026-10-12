@@ -1,4 +1,5 @@
 "use client";
+import Brand from "@/components/Brand";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -60,6 +61,15 @@ export default function GroupPage() {
     })();
   }, [id, load, router]);
 
+  // Pull in what other people added every few seconds, and when you return to the tab.
+  useEffect(() => {
+    if (!ready) return;
+    const tick = () => { if (document.visibilityState === "visible") load(guest); };
+    const t = setInterval(tick, 4000);
+    window.addEventListener("focus", tick);
+    return () => { clearInterval(t); window.removeEventListener("focus", tick); };
+  }, [ready, guest, load]);
+
   const as = guest ? { member: guest.member_token } : {};
   const myId = guest ? (guest.member_id ?? exps.find((e) => e.paid_by_name === guest.name)?.paid_by_id) : group?.members[0]?.id;
   const isAdmin = !guest && !!group;
@@ -68,7 +78,8 @@ export default function GroupPage() {
     e.preventDefault();
     setErr("");
     try {
-      await api(`/groups/${id}/expenses`, { method: "POST", json: { amount: Number(form.amount), description: form.description }, ...as });
+      const made = await api<GExp>(`/groups/${id}/expenses`, { method: "POST", json: { amount: Number(form.amount), description: form.description }, ...as });
+      setExps((l) => [made, ...l]);
       setForm({ amount: "", description: "" });
       load(guest);
     } catch (x) { setErr((x as Error).message); }
@@ -108,7 +119,7 @@ export default function GroupPage() {
 
   const body = (
     <>
-      {guest && <div className="gtop"><div className="logo"><i>◎</i>Coinly</div><span className="badge soft">Joined as {guest.name}</span></div>}
+      {guest && <div className="gtop"><Brand /><span className="badge soft">Joined as {guest.name}</span></div>}
       {isAdmin && <Link href="/splitter" className="back">← Splitter</Link>}
       <div className="top">
         <h2 className="h" style={{ margin: 0, marginRight: "auto" }}>{title}</h2>

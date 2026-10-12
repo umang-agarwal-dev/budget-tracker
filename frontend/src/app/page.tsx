@@ -1,4 +1,5 @@
 "use client";
+import Brand from "@/components/Brand";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getToken, inr } from "@/lib/api";
@@ -8,6 +9,7 @@ import Modal from "@/components/Modal";
 import Icon from "@/components/Icon";
 import Count from "@/components/Count";
 import Insights from "@/components/Insights";
+import Landing from "@/components/Landing";
 import ExpenseRow from "@/components/ExpenseRow";
 import { BudgetForm, ExpenseForm, Exp } from "@/components/forms";
 
@@ -33,7 +35,7 @@ function useCountUp(target: number) {
   return v;
 }
 
-export default function Home() {
+function Dashboard() {
   const router = useRouter();
   const [dash, setDash] = useState<Dash | null>(null);
   const [noBudget, setNoBudget] = useState(false);
@@ -67,11 +69,18 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (!getToken()) router.replace("/login");
-    else load();
+    load();
     const t = setTimeout(() => setSlow(true), 4000);
     return () => clearTimeout(t);
   }, [load, router]);
+
+  // Refresh when you come back to the tab, so changes made elsewhere show up without a reload.
+  useEffect(() => {
+    const f = () => { if (document.visibilityState === "visible") load(); };
+    window.addEventListener("focus", f);
+    document.addEventListener("visibilitychange", f);
+    return () => { window.removeEventListener("focus", f); document.removeEventListener("visibilitychange", f); };
+  }, [load]);
 
   const left = useCountUp(dash ? Number(dash.amount_left) : 0);
   const flash = (t: string) => { setPill(t); setTimeout(() => setPill(""), 2600); };
@@ -95,7 +104,7 @@ export default function Home() {
   if (err) return <div className="splash"><p className="err">{err}</p><button className="btn" onClick={() => location.reload()}>Try again</button></div>;
   if (!ready) return (
     <div className="splash">
-      <div className="logo big-logo"><i>◎</i>Coinly</div>
+      <Brand big />
       <div className="sbar"><b /></div>
       <p>{slow ? "Waking up the server, this can take up to a minute…" : "Loading your financial world…"}</p>
     </div>
@@ -188,4 +197,12 @@ export default function Home() {
       {pill && <div key={pill} className="pill">{pill} <b>✓</b></div>}
     </Shell>
   );
+}
+
+// Visitors without a login see the landing page; logged-in users see their dashboard.
+export default function Page() {
+  const [authed, setAuthed] = useState<boolean | null>(null);
+  useEffect(() => setAuthed(!!getToken()), []);
+  if (authed === null) return <div className="splash"><Brand big /></div>;
+  return authed ? <Dashboard /> : <Landing />;
 }
