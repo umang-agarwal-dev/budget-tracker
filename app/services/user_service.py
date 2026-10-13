@@ -45,3 +45,9 @@ def get_or_create_google_user(db: Session, email: str, name: str) -> User:
         db.commit()
         db.refresh(user)
     return user
+
+def update_name(db: Session, user: User, name: str) -> User:
+    user.name = name
+    db.commit()
+    db.refresh(user)
+    return user

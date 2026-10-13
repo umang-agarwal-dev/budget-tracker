@@ -1,4 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field
+from typing import Annotated
+from pydantic import BaseModel, EmailStr, Field, StringConstraints
+
+class UserUpdate(BaseModel):
+    name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=100)]
 
 
 class UserCreate(BaseModel):

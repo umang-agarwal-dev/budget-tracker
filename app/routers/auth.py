@@ -7,7 +7,7 @@ from app.models.user import User
 from app.core.security import create_access_token
 from app.schemas.token import GoogleLogin, Token
 from app.services import google_auth_service, user_service
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import UserCreate, UserRead, UserUpdate
 from app.core.limiter import limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -56,3 +56,11 @@ def google_login(request: Request, data: GoogleLogin, db: Session = Depends(get_
     name = info.get("name") or info["email"].split("@")[0]
     user = user_service.get_or_create_google_user(db, info["email"], name)
     return Token(access_token=create_access_token(user.id))
+
+@router.patch("/me", response_model=UserRead)
+def update_me(
+    data: UserUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return user_service.update_name(db, current_user, data.name)

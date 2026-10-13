@@ -47,3 +47,9 @@ def test_me_returns_current_user(client, make_user):
     res = client.get("/auth/me", headers=headers)
     assert res.status_code == 200
     assert res.json()["email"] == "a@example.com"
+
+def test_user_can_change_their_name(client, make_user):
+    headers = make_user()
+    res = client.patch("/auth/me", json={"name": "  Umang  "}, headers=headers)
+    assert res.status_code == 200 and res.json()["name"] == "Umang"
+    assert client.get("/auth/me", headers=headers).json()["name"] == "Umang"
