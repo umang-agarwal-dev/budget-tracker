@@ -7,21 +7,41 @@ import Icon from "./Icon";
 import { inr } from "@/lib/api";
 
 const HEAT = [0, 1, 0, 2, 3, 1, 0, 1, 0, 4, 2, 0, 1, 3, 0, 2, 1, 0, 3, 4, 1, 3, 1, 0, 2, 1, 0, 2, 0, 4, 2, 1, 0, 3, 1];
-const WORDS = ["Your", "money,", "in", "your"];
-const TAGS = ["Track spending", "Save for goals", "Split with friends", "AI tips", "Heatmaps", "Monthly insights"];
+const ROT = ["sorted.", "split.", "saved.", "smarter.", "sorted."]; // last one repeats the first, so the loop is seamless
+const TAGS = ["Track", "Save", "Split", "Insights", "AI tips", "Heatmap"];
 const FEATS = [
-  ["wallet", "Know what's left", "One big number shows what you can still spend this month. It counts down the moment you add an expense."],
-  ["spark", "Tips that actually help", "Smart suggestions tell you where to cut back, and how to reach the trip or gadget you are saving for."],
-  ["users", "Split without the awkward", "Share a link, friends add what they paid, and Pocket works out who pays whom. No accounts needed."],
+  ["wallet", "Know what's left", "One big number, always up to date."],
+  ["spark", "Smart nudges", "Tips on where to cut back."],
+  ["users", "Split, no awkward", "Share a link. Pocket does the maths."],
 ];
-const STEPS = [["01", "Set your budget", "Tell Pocket what you have for the month."], ["02", "Add what you spend", "It takes five seconds, and your number updates instantly."], ["03", "Let Pocket do the thinking", "Charts, tips and settle-ups, all in one place."]];
+const STEPS = [["01", "Set a budget", "Takes ten seconds."], ["02", "Add spends", "One tap, instant update."], ["03", "Chill", "Pocket handles the rest."]];
+
+// Pulls a button slightly towards the cursor.
+const mag = {
+  onPointerMove: (e: React.PointerEvent<HTMLElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    e.currentTarget.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.18}px, ${(e.clientY - r.top - r.height / 2) * 0.28}px)`;
+  },
+  onPointerLeave: (e: React.PointerEvent<HTMLElement>) => { e.currentTarget.style.transform = ""; },
+};
+// Soft light that follows the cursor inside a card.
+const spot = (e: React.PointerEvent<HTMLElement>) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty("--px", e.clientX - r.left + "px");
+  e.currentTarget.style.setProperty("--py", e.clientY - r.top + "px");
+};
 
 export default function Landing() {
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = root.current;
     if (!el) return;
-    const move = (e: PointerEvent) => { el.style.setProperty("--mx", e.clientX + "px"); el.style.setProperty("--my", e.clientY + "px"); };
+    const move = (e: PointerEvent) => {
+      el.style.setProperty("--mx", e.clientX + "px");
+      el.style.setProperty("--my", e.clientY + "px");
+      el.style.setProperty("--tx", String((e.clientX / window.innerWidth - 0.5) * 2));
+      el.style.setProperty("--ty", String((e.clientY / window.innerHeight - 0.5) * 2));
+    };
     window.addEventListener("pointermove", move);
     const io = new IntersectionObserver((es) => es.forEach((x) => { if (x.isIntersecting) x.target.classList.add("in"); }), { threshold: 0.15 });
     el.querySelectorAll(".rv").forEach((n) => io.observe(n));
@@ -34,61 +54,60 @@ export default function Landing() {
       <div className="lp-grid" />
       <nav className="lp-nav">
         <Brand />
-        <div className="lp-nav-r">
-          <Link className="lp-link" href="/login">Log in</Link>
-          <Link className="lp-cta sm" href="/login">Get Started <span>→</span></Link>
-        </div>
+        <Link className="lp-cta sm" href="/login" {...mag}>Get Started <span>→</span></Link>
       </nav>
 
       <header className="lp-hero">
+        <div className="lp-bits" aria-hidden>
+          {["₹", "✦", "₹", "✦", "₹", "✦"].map((s, i) => <i key={i} style={{ left: 6 + i * 16 + "%", animationDelay: -i * 2.3 + "s", animationDuration: 12 + i * 2 + "s" }}>{s}</i>)}
+        </div>
         <div>
-          <span className="lp-eyebrow"><i className="live" /> Budgeting and bill splitting, made for students</span>
-          <h1>
-            {WORDS.map((w, i) => <span key={w} className="w" style={{ animationDelay: i * 90 + "ms" }}>{w} </span>)}
-            <span className="w acc" style={{ animationDelay: "420ms" }}>Pocket
-              <svg viewBox="0 0 100 12" preserveAspectRatio="none" aria-hidden><path pathLength={1} d="M2 8 C 25 2, 60 12, 98 4" /></svg>
-            </span>.
+          <span className="lp-eyebrow"><i className="live" /> Made for students</span>
+          <h1 aria-label="Your pocket, sorted.">
+            <span className="w" aria-hidden>Your</span><span className="w" aria-hidden style={{ animationDelay: "90ms" }}>pocket,</span>
+            <span className="rot" aria-hidden><span className="rot-in">{ROT.map((r, i) => <b key={i}>{r}</b>)}</span></span>
           </h1>
-          <p className="lp-sub">See what is left this month, watch where it goes, save for the trip, and split the bill with friends. Simple, quick, and kind to a student budget.</p>
-          <div className="lp-acts">
-            <Link className="lp-cta" href="/login">Get Started <span>→</span></Link>
-            <a className="lp-link" href="#about">See how it works</a>
-          </div>
+          <p className="lp-sub">Know what&apos;s left. Split the bill. Skip the stress.</p>
+          <div className="lp-acts"><Link className="lp-cta" href="/login" {...mag}>Get Started <span>→</span></Link></div>
         </div>
 
         <div className="lp-vis" aria-hidden>
-          <div className="lp-card lp-c1">
-            <span className="lp-lbl">AMOUNT LEFT</span>
-            <b className="lp-big"><Count value={12480} fmt={inr} /></b>
-            <div className="lp-bar"><i /></div>
-            <span className="lp-mut">50% used · 14 days left</span>
+          <div className="lp-par lp-p1">
+            <div className="lp-card">
+              <span className="lp-lbl">AMOUNT LEFT</span>
+              <b className="lp-big"><Count value={12480} fmt={inr} /></b>
+              <div className="lp-bar"><i /></div>
+              <span className="lp-mut">50% used</span>
+            </div>
           </div>
-          <div className="lp-card lp-c2">
-            <span className="lp-lbl">THIS MONTH</span>
-            <div className="lp-heat">{HEAT.map((l, i) => <i key={i} className={`l${l}`} style={{ animationDelay: 600 + i * 25 + "ms" }} />)}</div>
+          <div className="lp-par lp-p2 lp-k2">
+            <div className="lp-card" style={{ animationDelay: "-2s" }}>
+              <span className="lp-lbl">THIS MONTH</span>
+              <div className="lp-heat">{HEAT.map((l, i) => <i key={i} className={`c${l}`} style={{ animationDelay: 600 + i * 25 + "ms" }} />)}</div>
+            </div>
           </div>
-          <div className="lp-card lp-c3">
-            <span className="lp-lbl">✦ AI SUGGESTION</span>
-            <p>Cut food delivery by 20% and your Goa trip fund is on track.</p>
-            <div className="lp-pay"><b>Priya</b> pays <b>Rahul</b><em>₹1,200</em></div>
+          <div className="lp-par lp-p3">
+            <div className="lp-card" style={{ animationDelay: "-4s" }}>
+              <span className="lp-lbl">✦ AI TIP</span>
+              <p>Skip two Swiggy orders. Goa is yours.</p>
+              <div className="lp-pay"><b>Priya</b> pays <b>Rahul</b><em>₹1,200</em></div>
+            </div>
           </div>
-          <div className="lp-note">You&apos;re on track!</div>
+          <div className="lp-note">On track!</div>
         </div>
       </header>
 
       <div className="lp-marq" aria-hidden>
-        <div className="lp-track">
-          {[0, 1].map((k) => <span key={k}>{TAGS.map((t) => <b key={t}>{t}</b>)}</span>)}
-        </div>
+        <div className="lp-track">{[0, 1].map((k) => <span key={k}>{TAGS.map((t) => <b key={t}>{t}</b>)}</span>)}</div>
       </div>
 
-      <section className="lp-sec" id="about">
-        <p className="lp-kick rv">About Pocket</p>
-        <h2 className="rv">A money app that feels like part of college life.</h2>
-        <p className="lp-sub rv" style={{ marginTop: 16 }}>Pocket was built for people living on a tight monthly budget. No jargon, no spreadsheets. Just a clear picture of your money and a little help staying on top of it.</p>
+      <section className="lp-sec">
+        <p className="lp-kick rv">Why Pocket</p>
+        <h2 className="rv">Built for tight budgets.</h2>
+        <p className="lp-sub rv" style={{ marginTop: 14 }}>No spreadsheets. No awkward chats.</p>
         <div className="lp-feats">
           {FEATS.map(([ic, t, d], i) => (
-            <div key={t} className="lp-feat rv" style={{ transitionDelay: i * 120 + "ms" }}>
+            <div key={t} className="lp-feat rv" style={{ transitionDelay: i * 120 + "ms" }} onPointerMove={spot}>
               <span className="lp-ic"><Icon n={ic} size={22} /></span>
               <h3>{t}</h3>
               <p>{d}</p>
@@ -98,7 +117,7 @@ export default function Landing() {
       </section>
 
       <section className="lp-sec">
-        <h2 className="rv">Three steps. That&apos;s it.</h2>
+        <h2 className="rv">Easy as 1-2-3.</h2>
         <div className="lp-steps">
           {STEPS.map(([n, t, d], i) => (
             <div key={n} className="lp-step rv" style={{ transitionDelay: i * 120 + "ms" }}>
@@ -109,10 +128,11 @@ export default function Landing() {
       </section>
 
       <section className="lp-final rv">
-        <h2>Ready to fill your Pocket?</h2>
-        <Link className="lp-cta" href="/login">Get Started <span>→</span></Link>
+        <div className="lp-orb" aria-hidden />
+        <h2>Make it to month-end.</h2>
+        <Link className="lp-cta" href="/login" {...mag}>Get Started <span>→</span></Link>
       </section>
-      <footer className="lp-foot"><Brand /><span>Made for students · © Pocket</span></footer>
+      <footer className="lp-foot"><Brand /><span>© Pocket</span></footer>
     </div>
   );
 }

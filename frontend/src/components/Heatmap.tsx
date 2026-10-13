@@ -1,9 +1,9 @@
 "use client";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { inr } from "@/lib/api";
 import Icon from "./Icon";
 
-// Built from the expense list, so any past month can be shown. Rows = weekdays, columns = weeks, darker = bigger spend.
+// A month calendar: every day is a square that fills the card. Warmer colour = more spent that day.
 export default function Heatmap({ exps }: { exps: { date: string; amount: string }[] }) {
   const now = new Date();
   const [back, setBack] = useState(0);
@@ -16,10 +16,7 @@ export default function Heatmap({ exps }: { exps: { date: string; amount: string
   const max = Math.max(...totals, 0);
   const level = (t: number) => (t <= 0 ? 0 : Math.min(4, Math.max(1, Math.ceil((t / max) * 4))));
   const offset = (first.getDay() + 6) % 7;
-  const cols = Math.ceil((offset + n) / 7);
-  const names = ["Mon", "", "Wed", "", "Fri", "", "Sun"];
   const month = first.toLocaleDateString("en-IN", { month: "short" });
-  const label = (i: number) => `${i + 1} ${month}: ${inr(totals[i])}`;
   const sum = totals.reduce((a, b) => a + b, 0);
   const go = (d: number) => { setBack(back + d); setTip(""); };
 
@@ -30,23 +27,22 @@ export default function Heatmap({ exps }: { exps: { date: string; amount: string
         <b>{first.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</b>
         <button onClick={() => go(-1)} disabled={back === 0} aria-label="Next month"><Icon n="right" size={16} /></button>
       </div>
-      <div className="hm-tip">{tip || (sum ? `${inr(sum)} spent` : "No spending this month")}</div>
-      <div key={key} className="hm" style={{ gridTemplateColumns: `auto repeat(${cols}, 16px)` }}>
-        {names.map((nm, r) => (
-          <Fragment key={r}>
-            <span className="hm-lbl">{nm}</span>
-            {Array.from({ length: cols }, (_, c) => {
-              const i = c * 7 + r - offset;
-              if (i < 0 || i >= n) return <i key={c} className="hm-c empty" />;
-              const future = back === 0 && i + 1 > now.getDate();
-              return (
-                <button key={c} aria-label={label(i)} className={`hm-c l${level(totals[i])}${future ? " fut" : ""}`}
-                  style={{ animationDelay: i * 14 + "ms" }} onMouseEnter={() => setTip(label(i))} onClick={() => setTip(label(i))} />
-              );
-            })}
-          </Fragment>
-        ))}
+      <div className="hm-tip">{tip || (sum ? `${inr(sum)} spent this month` : "No spending this month")}</div>
+      <div className="cal" key={key}>
+        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => <span key={i} className="cal-h">{d}</span>)}
+        {Array.from({ length: offset }, (_, i) => <i key={"b" + i} />)}
+        {totals.map((t, i) => {
+          const future = back === 0 && i + 1 > now.getDate();
+          const today = back === 0 && i + 1 === now.getDate();
+          return (
+            <button key={i} className={`cal-c c${level(t)}${future ? " fut" : ""}${today ? " today" : ""}`} style={{ animationDelay: i * 12 + "ms" }}
+              aria-label={`${i + 1} ${month}: ${inr(t)}`} onClick={() => setTip(`${i + 1} ${month}: ${inr(t)}`)}>
+              {i + 1}
+            </button>
+          );
+        })}
       </div>
+      <div className="cal-key"><span>Less</span>{[0, 1, 2, 3, 4].map((l) => <i key={l} className={`c${l}`} />)}<span>More</span></div>
     </div>
   );
 }

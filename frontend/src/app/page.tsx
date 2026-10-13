@@ -132,7 +132,7 @@ function Dashboard() {
     <Shell>
       <div className="top">
         <span className="mut">{now.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</span>
-        <button className="btn ghost" onClick={() => setPanel(true)}><Icon n="chart" size={16} /> Insights</button>
+        <button className="btn ghost" onClick={() => setPanel(true)}><Icon n="chart" size={16} /> <span className="hide-m">Insights</span></button>
         <button className="btn" onClick={() => setModal("exp")}>+ Add</button>
       </div>
 
@@ -174,7 +174,7 @@ function Dashboard() {
 
       <div className="grid trio">
         <div className="card" style={{ animationDelay: "240ms" }}><h4>Expense heatmap</h4><Heatmap exps={exps} /></div>
-        <div className="card" style={{ animationDelay: "300ms" }}>
+        <div className="card recent" style={{ animationDelay: "300ms" }}>
           <h4>Recent expenses <button className="link" onClick={() => router.push("/expenses")}>View all</button></h4>
           {exps.length === 0 && <p className="mut">No expenses yet. Add your first one with “+ Add”.</p>}
           {exps.slice(0, 5).map((e) => <ExpenseRow key={e.id} e={e} isNew={e.id === newId} leaving={e.id === leaving} onDelete={remove} />)}
