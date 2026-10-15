@@ -9,6 +9,7 @@ import Modal from "@/components/Modal";
 import Avatar from "@/components/Avatar";
 import Icon from "@/components/Icon";
 import Confetti from "@/components/Confetti";
+import Stamp from "@/components/Stamp";
 
 type Guest = { member_token: string; member_id?: number; name: string; group_name: string };
 type GExp = { id: number; amount: string; description: string; date: string; paid_by_id: number; paid_by_name: string };
@@ -36,6 +37,7 @@ export default function GroupPage() {
   const [copied, setCopied] = useState("");
   const [busy, setBusy] = useState(false);
   const [boom, setBoom] = useState(false);
+  const [stamp, setStamp] = useState(false);
 
   const load = useCallback(async (g: Guest | null) => {
     const o = g ? { member: g.member_token } : {};
@@ -95,6 +97,7 @@ export default function GroupPage() {
       setSettle(await api<Settlement>(`/groups/${id}/settle`, { method: "POST" }));
       setTab("set");
       setBoom(true);
+      setStamp(true);
       setTimeout(() => setBoom(false), 3200);
     } catch (x) { setErr((x as Error).message); }
     setBusy(false);
@@ -195,6 +198,7 @@ export default function GroupPage() {
 
       {!settle && (guest || group) && <button className="fab" aria-label="Add expense" onClick={() => setModal("add")}>+</button>}
       {boom && <Confetti />}
+      {stamp && <Stamp groupId={id} onClose={() => setStamp(false)} />}
 
       {modal === "add" && (
         <Modal title="Add expense" onClose={() => setModal(null)}>

@@ -47,6 +47,7 @@ export default function Login() {
         <button type="button" className="link" style={{ margin: "0 auto" }} onClick={() => setMode(mode === "login" ? "register" : "login")}>
           {mode === "login" ? "New here? Create an account" : "Have an account? Log in"}
         </button>
+        <p className="mut legal-note">By continuing you agree to our <Link href="/terms">Terms</Link> and <Link href="/privacy">Privacy Policy</Link>.</p>
       </form>
     </main>
   );

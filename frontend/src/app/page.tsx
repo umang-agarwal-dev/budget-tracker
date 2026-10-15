@@ -10,6 +10,7 @@ import Icon from "@/components/Icon";
 import Count from "@/components/Count";
 import Insights from "@/components/Insights";
 import Landing from "@/components/Landing";
+import PaceCard from "@/components/PaceCard";
 import ExpenseRow from "@/components/ExpenseRow";
 import { BudgetForm, ExpenseForm, Exp } from "@/components/forms";
 
@@ -148,9 +149,9 @@ function Dashboard() {
           <div key={dash.amount_left} className={left < 0 ? "big neg" : "big"}>
             {left < 0 ? "-" : ""}₹{Math.abs(Math.round(left)).toLocaleString("en-IN")}
           </div>
-          <div className="bar"><b style={{ width: used + "%" }} /></div>
+          <div className={"bar " + mood[1]}><b style={{ width: used + "%" }} /><i className="bar-mark" style={{ left: pace + "%" }} title="Where you should be by today" /></div>
           <p className="mut">{Math.round(used)}% used · {inr(spent)} spent of {inr(budget)} · {dash.days_left} days left</p>
-          <div className={`note ${mood[1]}`}>{mood[0]}</div>
+          <PaceCard overspent={dash.overspent} used={used} pace={pace} left={Number(dash.amount_left)} days={dash.days_left} />
         </section>
       )}
 

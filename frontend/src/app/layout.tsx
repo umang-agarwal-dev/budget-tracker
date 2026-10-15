@@ -1,9 +1,20 @@
 import "./globals.css";
+import type { Metadata, Viewport } from "next";
+import { PWARegister } from "@/components/PWA";
 
-import type { Viewport } from "next";
-
-export const metadata = { title: "Pocket", description: "Your money, in your Pocket." };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover" };
+export const metadata: Metadata = {
+  title: { default: "Pocket", template: "%s · Pocket" },
+  description: "Know what's left. Split the bill. Skip the stress.",
+  applicationName: "Pocket",
+  appleWebApp: { capable: true, title: "Pocket", statusBarStyle: "black-translucent" },
+  formatDetection: { telephone: false },
+};
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [{ media: "(prefers-color-scheme: light)", color: "#f6f4ec" }, { media: "(prefers-color-scheme: dark)", color: "#0e0f0e" }],
+};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>{children}<PWARegister /></body>
     </html>
   );
 }

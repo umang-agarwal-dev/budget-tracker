@@ -1,9 +1,12 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, getToken } from "@/lib/api";
 import Shell from "@/components/Shell";
+import Modal from "@/components/Modal";
 import Icon from "@/components/Icon";
+import { InstallCard } from "@/components/PWA";
 import { Exp } from "@/components/forms";
 import { fileToAvatar, getAvatar, notify, setAvatar } from "@/lib/profile";
 
@@ -16,6 +19,8 @@ export default function Settings() {
   const [photo, setPhoto] = useState<string | null>(null);
   const [dark, setDark] = useState(false);
   const [msg, setMsg] = useState("");
+  const [del, setDel] = useState(false);
+  const [sure, setSure] = useState("");
   const file = useRef<HTMLInputElement>(null);
   const flash = (t: string) => { setMsg(t); setTimeout(() => setMsg(""), 2600); };
 
@@ -51,6 +56,14 @@ export default function Settings() {
       flash(`Exported ${rows.length} expenses`);
     } catch (x) { flash((x as Error).message); }
   }
+  async function deleteAccount() {
+    try {
+      await api("/auth/me", { method: "DELETE" });
+      localStorage.removeItem("token");
+      setAvatar(null);
+      router.replace("/");
+    } catch (x) { flash((x as Error).message); setDel(false); }
+  }
 
   return (
     <Shell>
@@ -72,6 +85,7 @@ export default function Settings() {
             <span className="mut">Your photo is saved on this device only.</span>
           </div>
         </div>
+        <InstallCard />
         <div className="card">
           <h4>Appearance</h4>
           <div className="seg">
@@ -82,11 +96,22 @@ export default function Settings() {
         <div className="card">
           <h4>Your data</h4>
           <div className="acts"><button className="btn ghost" onClick={exportCsv}>Export expenses (CSV)</button></div>
+          <p className="mut"><Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Use</Link></p>
         </div>
         <div className="card">
-          <div className="acts" style={{ margin: 0 }}><button className="btn" onClick={() => { localStorage.removeItem("token"); router.replace("/login"); }}><Icon n="out" size={16} /> Log out</button></div>
+          <div className="acts" style={{ margin: 0 }}>
+            <button className="btn" onClick={() => { localStorage.removeItem("token"); router.replace("/login"); }}><Icon n="out" size={16} /> Log out</button>
+            <button className="btn ghost" onClick={() => setDel(true)}><Icon n="trash" size={16} /> Delete account</button>
+          </div>
         </div>
       </div>
+      {del && (
+        <Modal title="Delete your account?" onClose={() => { setDel(false); setSure(""); }}>
+          <p className="mut">This permanently removes your account, budgets, expenses and goals, and the groups you created (for everyone in them). It can&apos;t be undone.</p>
+          <input placeholder="Type DELETE to confirm" value={sure} onChange={(e) => setSure(e.target.value)} />
+          <button className="btn big danger" disabled={sure !== "DELETE"} onClick={deleteAccount}>Delete everything</button>
+        </Modal>
+      )}
       {msg && <div key={msg} className="pill" style={{ background: "var(--lime)", color: "#111" }}>{msg}</div>}
     </Shell>
   );

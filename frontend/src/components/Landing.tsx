@@ -132,7 +132,7 @@ export default function Landing() {
         <h2>Make it to month-end.</h2>
         <Link className="lp-cta" href="/login" {...mag}>Get Started <span>→</span></Link>
       </section>
-      <footer className="lp-foot"><Brand /><span>© Pocket</span></footer>
+      <footer className="lp-foot"><Brand /><span>© Pocket<Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link></span></footer>
     </div>
   );
 }

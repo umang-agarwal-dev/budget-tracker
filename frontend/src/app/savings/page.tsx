@@ -84,6 +84,12 @@ export default function Savings() {
     }
   }
   const done = () => { setModal(null); load(); };
+  const [del, setDel] = useState<Goal | null>(null);
+  async function removeGoal() {
+    if (!del) return;
+    try { await api(`/savings/goals/${del.id}`, { method: "DELETE" }); load(); } catch (x) { setErr((x as Error).message); }
+    setDel(null);
+  }
 
   return (
     <Shell>
@@ -97,7 +103,7 @@ export default function Savings() {
           const t = tips[g.id];
           return (
             <div key={g.id} className="card" style={{ animationDelay: i * 80 + "ms" }}>
-              <h4>{g.purpose}</h4>
+              <h4>{g.purpose}<button className="del show" style={{ marginLeft: "auto" }} aria-label="Delete goal" onClick={() => setDel(g)}><Icon n="trash" size={16} /></button></h4>
               <p className="mut">Target {inr(g.target_amount)} by {new Date(g.target_date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
               <div className="bar" style={{ marginTop: 12 }}><b style={{ width: pct + "%" }} /></div>
               <p><b>{inr(g.saved)}</b> saved · {Math.round(pct)}%</p>
@@ -121,6 +127,12 @@ export default function Savings() {
       </div>
       {modal === "new" && <Modal title="New savings goal" onClose={() => setModal(null)}><GoalForm onDone={done} /></Modal>}
       {typeof modal === "number" && <Modal title="Add money to goal" onClose={() => setModal(null)}><MoneyForm id={modal} onDone={done} /></Modal>}
+    {del && (
+        <Modal title="Delete this goal?" onClose={() => setDel(null)}>
+          <p className="mut">“{del.purpose}” and everything you saved into it will be removed. This can't be undone.</p>
+          <div className="acts"><button className="btn big danger" onClick={removeGoal}>Yes, delete</button><button className="btn ghost" onClick={() => setDel(null)}>Cancel</button></div>
+        </Modal>
+      )}
     </Shell>
   );
 }
