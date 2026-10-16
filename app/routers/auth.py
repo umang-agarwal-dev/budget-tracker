@@ -64,3 +64,7 @@ def update_me(
     current_user: User = Depends(get_current_user),
 ):
     return user_service.update_name(db, current_user, data.name)
+
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+def delete_me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    user_service.delete_user(db, current_user)

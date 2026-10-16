@@ -89,11 +89,15 @@ def join_group(db: Session, group: Group, name: str) -> GroupMember:
 
 
 def group_view(db: Session, group: Group) -> dict:
+    settlement = db.scalar(select(Settlement).where(Settlement.group_id == group.id))
     return {
         "id": group.id,
         "name": group.name,
         "invite_link": f"{settings.FRONTEND_URL}/join/{group.invite_token}",
         "members": list_members(db, group.id),
+        "settled": settlement is not None,
+        "settled_at": settlement.generated_at if settlement else None,
+        "total_spent": settlement.result["total_spent"] if settlement else None,
     }
 
 def get_member_by_token(

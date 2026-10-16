@@ -94,3 +94,10 @@ def goal_advice(
         "remaining_today": ai_usage_service.remaining_today(db, current_user.id),
         "source": source,
     }
+
+@router.delete("/goals/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_goal(goal_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    goal = savings_service.get_goal(db, current_user.id, goal_id)
+    if goal is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Goal not found")
+    savings_service.delete_goal(db, goal)

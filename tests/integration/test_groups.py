@@ -138,3 +138,9 @@ def test_admin_can_unlock_a_settled_group(client, make_user):
     assert client.post(f"/groups/{group_id}/unlock", headers=headers).status_code == 204
     again = client.post(f"/groups/{group_id}/expenses", json={"amount": 100, "description": "late"}, headers=headers)
     assert again.status_code == 201
+
+def test_settled_group_is_flagged_for_history(client, make_user):
+    headers = make_user()
+    group_id, _, _, _ = settled_group(client, headers)
+    g = next(x for x in client.get("/groups", headers=headers).json() if x["id"] == group_id)
+    assert g["settled"] is True and Decimal(g["total_spent"]) == Decimal("3600")

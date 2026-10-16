@@ -28,6 +28,9 @@ class GroupRead(BaseModel):
     name: str
     invite_link: str
     members: list[MemberRead]
+    settled: bool = False
+    settled_at: datetime.datetime | None = None
+    total_spent: Decimal | None = None
 
 
 class GroupPreview(BaseModel):

@@ -67,3 +67,9 @@ def test_fallback_when_ai_fails_does_not_use_up_a_try(client, make_user, monkeyp
     assert res.status_code == 200
     assert res.json()["source"] == "basic"
     assert res.json()["remaining_today"] == 2
+
+def test_goal_can_be_deleted(client, make_user):
+    headers = make_user()
+    goal = make_goal(client, headers)
+    assert client.delete(f"/savings/goals/{goal['id']}", headers=headers).status_code == 204
+    assert client.get(f"/savings/goals/{goal['id']}", headers=headers).status_code == 404

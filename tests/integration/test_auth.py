@@ -53,3 +53,9 @@ def test_user_can_change_their_name(client, make_user):
     res = client.patch("/auth/me", json={"name": "  Umang  "}, headers=headers)
     assert res.status_code == 200 and res.json()["name"] == "Umang"
     assert client.get("/auth/me", headers=headers).json()["name"] == "Umang"
+
+def test_user_can_delete_their_account(client, make_user):
+    headers = make_user()
+    client.post("/expenses", json={"amount": 10, "category": "food"}, headers=headers)
+    assert client.delete("/auth/me", headers=headers).status_code == 204
+    assert client.get("/auth/me", headers=headers).status_code == 401

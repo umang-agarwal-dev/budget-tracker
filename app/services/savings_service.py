@@ -115,3 +115,7 @@ def build_advice_facts(db: Session, user_id: int, goal: SavingsGoal) -> dict | N
         "months_left": view["months_left"],
         "monthly_needed": view["monthly_needed"],
     }
+
+def delete_goal(db: Session, goal: SavingsGoal) -> None:
+    db.delete(goal)
+    db.commit()
