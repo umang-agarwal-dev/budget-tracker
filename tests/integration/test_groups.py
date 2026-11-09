@@ -144,3 +144,40 @@ def test_settled_group_is_flagged_for_history(client, make_user):
     group_id, _, _, _ = settled_group(client, headers)
     g = next(x for x in client.get("/groups", headers=headers).json() if x["id"] == group_id)
     assert g["settled"] is True and Decimal(g["total_spent"]) == Decimal("3600")
+
+def test_expense_can_be_split_between_selected_people(client, make_user):
+    headers = make_user()
+    group_id, token = create_group(client, headers)
+    rahul = join(client, token, "Rahul")
+    join(client, token, "Priya")
+    alice_id = client.get(f"/groups/{group_id}", headers=headers).json()["members"][0]["id"]
+
+    res = client.post(f"/groups/{group_id}/expenses", headers=headers,
+        json={"amount": 900, "description": "dinner", "split_among": [alice_id, rahul["member_id"]]})
+    assert res.status_code == 201
+    assert res.json()["split_all"] is False
+    assert {p["name"] for p in res.json()["participants"]} == {"Alice", "Rahul"}
+
+    settled = client.post(f"/groups/{group_id}/settle", headers=headers).json()
+    payments = {(p["from_name"], p["to_name"]): Decimal(p["amount"]) for p in settled["payments"]}
+    assert payments == {("Rahul", "Alice"): Decimal("450")}      # Priya owes nothing
+
+
+def test_split_rejects_people_from_another_group(client, make_user):
+    alice = make_user("a@example.com", "Alice")
+    bob = make_user("b@example.com", "Bob")
+    group_a, _ = create_group(client, alice)
+    group_b, _ = create_group(client, bob)
+    bob_member = client.get(f"/groups/{group_b}", headers=bob).json()["members"][0]["id"]
+    res = client.post(f"/groups/{group_a}/expenses", headers=alice,
+        json={"amount": 100, "description": "x", "split_among": [bob_member]})
+    assert res.status_code == 400
+
+
+def test_guest_can_list_group_members(client, make_user):
+    headers = make_user()
+    group_id, token = create_group(client, headers)
+    rahul = join(client, token, "Rahul")
+    res = client.get(f"/groups/{group_id}/members", headers={"X-Member-Token": rahul["member_token"]})
+    assert res.status_code == 200
+    assert {m["name"] for m in res.json()} == {"Alice", "Rahul"}

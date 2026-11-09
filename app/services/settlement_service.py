@@ -3,28 +3,33 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models.group import Group, GroupExpense, GroupMember, Settlement
+from app.models.group import Group, GroupExpense, GroupMember, Settlement,GroupExpenseParticipant
 
 
 # ---------- pure math (no database, no AI) ----------
 
 
-def compute_balances(
-    member_ids: list[int], expenses: list[tuple[int, int, int]]
-) -> dict[int, int]:
-    """expenses: (expense_id, paid_by, amount_in_paise).
-    Returns each member's balance in paise: positive = owed money, negative = owes."""
+def compute_totals(member_ids, expenses):
+    """expenses: (expense_id, paid_by, paise, participants). participants None or [] = everyone.
+    Returns (paid, owed) per member, in paise."""
     ids = sorted(member_ids)
-    n = len(ids)
-    balances = {m: 0 for m in ids}
-    for expense_id, paid_by, cents in expenses:
-        balances[paid_by] += cents
+    paid = {m: 0 for m in ids}
+    owed = {m: 0 for m in ids}
+    for expense_id, paid_by, cents, participants in expenses:
+        sharers = sorted(participants) if participants else ids
+        n = len(sharers)
+        paid[paid_by] += cents
         share, extra = divmod(cents, n)
-        for m in ids:
-            balances[m] -= share
-        for k in range(extra):
-            balances[ids[(expense_id + k) % n]] -= 1
-    return balances
+        for m in sharers:
+            owed[m] += share
+        for k in range(extra):                          # leftover paise, rotated between sharers
+            owed[sharers[(expense_id + k) % n]] += 1
+    return paid, owed
+
+
+def compute_balances(member_ids, expenses):
+    paid, owed = compute_totals(member_ids, expenses)
+    return {m: paid[m] - owed[m] for m in paid}
 
 
 def simplify(balances: dict[int, int]) -> list[tuple[int, int, int]]:
@@ -70,25 +75,33 @@ def finalize(db: Session, group: Group) -> Settlement:
         .where(GroupMember.group_id == group.id)
         .order_by(GroupMember.id)
     ).all()
-    rows = db.execute(
-        select(GroupExpense.id, GroupExpense.paid_by, GroupExpense.amount).where(
-            GroupExpense.group_id == group.id
-        )
-    ).all()
+
+    rows = db.execute(select(GroupExpense.id, GroupExpense.paid_by, GroupExpense.amount)
+                      .where(GroupExpense.group_id == group.id)).all()
     if not rows:
         raise NothingToSettleError
 
+    parts: dict[int, list[int]] = {}
+    for eid, mid in db.execute(
+        select(GroupExpenseParticipant.group_expense_id, GroupExpenseParticipant.member_id)
+        .where(GroupExpenseParticipant.group_expense_id.in_([r[0] for r in rows]))
+    ):
+        parts.setdefault(eid, []).append(mid)
+
     names = {m.id: m.name for m in members}
-    expenses = [(eid, paid_by, int(amount * 100)) for eid, paid_by, amount in rows]
-    balances = compute_balances(list(names), expenses)
+    expenses = [(eid, paid_by, int(amount * 100), parts.get(eid)) for eid, paid_by, amount in rows]
+    paid, owed = compute_totals(list(names), expenses)
+    balances = {m: paid[m] - owed[m] for m in names}
     payments = simplify(balances)
 
     result = {
-        "total_spent": _rupees(sum(cents for _, _, cents in expenses)),
+        "total_spent": _rupees(sum(cents for _, _, cents, _ in expenses)),
         "balances": [
-            {"member_id": m, "name": names[m], "balance": _rupees(b)}
+            {"member_id": m, "name": names[m], "balance": _rupees(b),
+             "paid": _rupees(paid[m]), "owed": _rupees(owed[m])}
             for m, b in balances.items()
         ],
+
         "payments": [
             {
                 "from_id": f,

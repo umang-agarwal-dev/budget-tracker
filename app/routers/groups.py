@@ -13,6 +13,7 @@ from app.schemas.group import (
     GroupRead,
     JoinResult,
     MemberJoin,
+    MemberRead,
     SettlementRead,
 )
 from app.services import group_expense_service, group_service, settlement_service
@@ -91,6 +92,9 @@ def get_group(
     response_model=GroupExpenseRead,
     status_code=status.HTTP_201_CREATED,
 )
+@router.post("/{group_id}/expenses", response_model=GroupExpenseRead, status_code=status.HTTP_201_CREATED)
+
+
 def add_group_expense(
     group_id: int,
     data: GroupExpenseCreate,
@@ -99,9 +103,20 @@ def add_group_expense(
 ):
     if group_service.is_finalized(db, group_id):
         raise HTTPException(status.HTTP_409_CONFLICT, "This group is already settled")
+    try:
+        expense = group_expense_service.add_expense(db, group_id, member, data)
+    except group_expense_service.InvalidSplitError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    return group_expense_service.describe(db, [expense])[0]
 
-    expense = group_expense_service.add_expense(db, group_id, member, data)
-    return group_expense_service.expense_view(expense, member.name)
+
+@router.get("/{group_id}/members", response_model=list[MemberRead])
+def list_group_members(
+    group_id: int,
+    db: Session = Depends(get_db),
+    _: GroupMember = Depends(get_group_member),
+):
+    return group_service.list_members(db, group_id)
 
 
 @router.get("/{group_id}/expenses", response_model=list[GroupExpenseRead])

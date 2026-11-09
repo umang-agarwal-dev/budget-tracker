@@ -48,10 +48,10 @@ class JoinResult(BaseModel):
 
 class GroupExpenseCreate(BaseModel):
     amount: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
-    description: Annotated[
-        str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)
-    ]
+    description: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=255)]
     date: datetime.date | None = None
+    split_among: list[int] | None = Field(default=None, max_length=20)  #member ids; leave out = everyone
+
 
 
 class GroupExpenseRead(BaseModel):
@@ -61,6 +61,8 @@ class GroupExpenseRead(BaseModel):
     date: datetime.date
     paid_by_id: int
     paid_by_name: str
+    split_all: bool                    
+    participants: list[MemberRead]     #empty when split_all is true
 
 class PaymentRead(BaseModel):
     from_id: int
@@ -74,6 +76,8 @@ class BalanceRead(BaseModel):
     member_id: int
     name: str
     balance: Decimal
+    paid: Decimal | None = None        # total this person paid
+    owed: Decimal | None = None        # total this person's share
 
 
 class SettlementRead(BaseModel):

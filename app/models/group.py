@@ -59,3 +59,13 @@ class Settlement(Base):
         default=lambda: datetime.datetime.now(datetime.timezone.utc),
     )
     result: Mapped[dict] = mapped_column(JSON)
+
+class GroupExpenseParticipant(Base):
+    __tablename__ = "group_expense_participants"
+
+    group_expense_id: Mapped[int] = mapped_column(
+        ForeignKey("group_expenses.id", ondelete="CASCADE"), primary_key=True
+    )
+    member_id: Mapped[int] = mapped_column(
+        ForeignKey("group_members.id", ondelete="CASCADE"), primary_key=True
+    )
