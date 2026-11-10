@@ -4,8 +4,8 @@ import { createPortal } from "react-dom";
 import { api, inr } from "@/lib/api";
 import Icon from "./Icon";
 
-type Item = { id: number; amount: string; description: string; date: string; paid_by_name: string };
-type Settlement = { total_spent: string; message: string; payments: { from_name: string; to_name: string; amount: string }[] };
+type Item = { id: number; amount: string; description: string; date: string; paid_by_name: string; split_all?: boolean; participants?: { id: number; name: string }[] };
+type Settlement = { total_spent: string; message: string; balances: { member_id: number; name: string; paid?: string | null; owed?: string | null }[]; payments: { from_name: string; to_name: string; amount: string }[] };
 export type ReceiptGroup = { id: number; name: string; settled_at: string | null; members: { id: number; name: string }[] };
 
 // A settled trip, shown like a printed receipt.
@@ -44,12 +44,19 @@ export default function Receipt({ group, onClose }: { group: ReceiptGroup; onClo
         {!items && <p className="rc-meta">Printing…</p>}
         {items?.map((e, i) => (
           <div key={e.id} className="rc-row" style={{ animationDelay: 500 + i * 70 + "ms" }}>
-            <span>{e.description}<small>Paid by {e.paid_by_name}</small></span><b>{inr(e.amount)}</b>
+            <span>{e.description}<small>Paid by {e.paid_by_name} · Split: {e.split_all === false && e.participants?.length ? e.participants.map((p) => p.name).join(", ") : "everyone"}</small></span><b>{inr(e.amount)}</b>
           </div>
         ))}
         <hr />
         <div className="rc-row total" style={{ animationDelay: 700 + (items?.length ?? 0) * 70 + "ms" }}><span>TOTAL</span><b>{inr(total)}</b></div>
-        <div className="rc-row" style={{ animationDelay: 780 + (items?.length ?? 0) * 70 + "ms" }}><span>Each share ({group.members.length} people)</span><b>{inr(each)}</b></div>
+        {items?.every((e) => e.split_all !== false) && <div className="rc-row" style={{ animationDelay: 780 + (items?.length ?? 0) * 70 + "ms" }}><span>Each share ({group.members.length} people)</span><b>{inr(each)}</b></div>}
+        {s?.balances?.[0]?.paid != null && (
+          <>
+            <hr />
+            <p className="rc-h">PER PERSON</p>
+            {s.balances.map((b, i) => <div key={b.member_id} className="rc-row" style={{ animationDelay: 850 + i * 60 + "ms" }}><span>{b.name}<small>paid {inr(b.paid ?? 0)}</small></span><b>share {inr(b.owed ?? 0)}</b></div>)}
+          </>
+        )}
         {s && s.payments.length > 0 && (
           <>
             <hr />

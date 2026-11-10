@@ -10,13 +10,14 @@ import Avatar from "@/components/Avatar";
 import Icon from "@/components/Icon";
 import Confetti from "@/components/Confetti";
 import Stamp from "@/components/Stamp";
+import SplitPicker, { Member, Split } from "@/components/SplitPicker";
 
 type Guest = { member_token: string; member_id?: number; name: string; group_name: string };
-type GExp = { id: number; amount: string; description: string; date: string; paid_by_id: number; paid_by_name: string };
+type GExp = { id: number; amount: string; description: string; date: string; paid_by_id: number; paid_by_name: string; split_all?: boolean; participants?: { id: number; name: string }[] };
 type Group = { id: number; name: string; invite_link: string; members: { id: number; name: string }[] };
 type Settlement = {
   group_name: string; total_spent: string; message: string;
-  balances: { member_id: number; name: string; balance: string }[];
+  balances: { member_id: number; name: string; balance: string; paid?: string | null; owed?: string | null }[];
   payments: { from_name: string; to_name: string; amount: string }[];
 };
 
@@ -33,6 +34,8 @@ export default function GroupPage() {
   const [tab, setTab] = useState<"exp" | "set">("exp");
   const [modal, setModal] = useState<"add" | "settle" | "unlock" | null>(null);
   const [form, setForm] = useState({ amount: "", description: "" });
+  const [members, setMembers] = useState<Member[]>([]);
+  const [split, setSplit] = useState<Split>({ all: true, picked: [] });
   const [err, setErr] = useState("");
   const [copied, setCopied] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,6 +46,7 @@ export default function GroupPage() {
     const o = g ? { member: g.member_token } : {};
     try {
       setExps(await api<GExp[]>(`/groups/${id}/expenses`, o));
+      setMembers(await api<Member[]>(`/groups/${id}/members`, o).catch(() => []));
       try { setSettle(await api<Settlement>(`/groups/${id}/settlement`, o)); }
       catch (x) { if ((x as { status?: number }).status !== 404) throw x; setSettle(null); }
     } catch (x) { setErr((x as Error).message); }
@@ -80,9 +84,10 @@ export default function GroupPage() {
     e.preventDefault();
     setErr("");
     try {
-      const made = await api<GExp>(`/groups/${id}/expenses`, { method: "POST", json: { amount: Number(form.amount), description: form.description }, ...as });
+      const made = await api<GExp>(`/groups/${id}/expenses`, { method: "POST", json: { amount: Number(form.amount), description: form.description, split_among: split.all || split.picked.length === members.length ? null : split.picked }, ...as });
       setExps((l) => [made, ...l]);
       setForm({ amount: "", description: "" });
+      setSplit({ all: true, picked: [] });
       load(guest);
     } catch (x) { setErr((x as Error).message); }
     setModal(null);
@@ -161,7 +166,12 @@ export default function GroupPage() {
                 {!settle && e.paid_by_id === myId
                   ? <button className="del" aria-label="Delete expense" onClick={() => del(e.id)}><Icon n="trash" size={16} /></button>
                   : <span />}
-                <span className="mut">Paid by {e.paid_by_name} · {new Date(e.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })} · split equally</span>
+                <span className="mut">Paid by {e.paid_by_name} · {new Date(e.date + "T00:00:00").toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                <span className="split-tag">
+                  {e.split_all === false && e.participants?.length
+                    ? <>{e.participants.map((p) => <Avatar key={p.id} name={p.name} />)}<i>{e.participants.map((p) => p.name).join(", ")}</i></>
+                    : <><Icon n="users" size={12} /> Everyone</>}
+                </span>
               </div>
             </div>
           ))}
@@ -184,7 +194,7 @@ export default function GroupPage() {
           <h4 style={{ margin: "18px 0 8px" }}>Balances</h4>
           {settle.balances.map((b) => (
             <div key={b.member_id} className="row">
-              <Avatar name={b.name} /><div><b>{b.name}</b></div>
+              <Avatar name={b.name} /><div><b>{b.name}</b>{b.paid != null && <small className="share-line">Paid {inr(b.paid)} · Share {inr(b.owed ?? 0)}</small>}</div>
               <b className={Number(b.balance) < 0 ? "up" : "down"}>{Number(b.balance) < 0 ? "owes " : "gets "}{inr(Math.abs(Number(b.balance)))}</b>
             </div>
           ))}
@@ -205,7 +215,8 @@ export default function GroupPage() {
           <form onSubmit={add}>
             <label className="amt-in"><span>₹</span><input autoFocus type="number" min="0.01" step="0.01" placeholder="Amount you paid" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required /></label>
             <input placeholder="What was it for? e.g. Hotel" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
-            <button className="btn big">Add expense</button>
+            <SplitPicker members={members} amount={Number(form.amount) || 0} value={split} onChange={setSplit} />
+            <button className="btn big" disabled={!split.all && split.picked.length === 0}>Add expense</button>
           </form>
         </Modal>
       )}

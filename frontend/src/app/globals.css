@@ -530,3 +530,28 @@ input:focus{border-color:var(--ink);outline:0}
  .stamp-big{font-size:36px}
  .seg2{display:grid;width:100%}
 }
+/* ---- update 8: choose who shares an expense ---- */
+.split{display:flex;flex-direction:column;gap:8px}
+.seg2.everyone i{transform:none}.seg2.choose i{transform:translateX(100%)}
+.seg2.everyone button:first-of-type,.seg2.choose button:last-of-type{color:#111}
+.pick-wrap{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .45s cubic-bezier(.2,.9,.2,1),opacity .3s}
+.pick-wrap.open{grid-template-rows:1fr;opacity:1}
+.pick-in{overflow:hidden;min-height:0}
+.pick-grid{display:flex;flex-wrap:wrap;gap:8px;padding:4px 0}
+.pick-wrap.open .pick{animation:pop .35s both}
+.pick{position:relative;display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;border-radius:99px;border:1.5px solid var(--bd);background:none;cursor:pointer;font-weight:600;opacity:.6;transition:background .2s,opacity .2s,transform .15s,box-shadow .2s}
+.pick .av{width:28px;height:28px;margin:0;border:0}
+.pick em{width:18px;height:18px;border-radius:50%;background:#111;color:var(--lime);display:grid;place-items:center;font-style:normal;transform:scale(0);transition:transform .3s cubic-bezier(.3,1.8,.5,1)}
+.pick.on{opacity:1;background:var(--lime);color:#111;border-color:#111;box-shadow:2px 2px 0 #111}
+.pick.on em{transform:scale(1)}
+.pick:active{transform:scale(.95)}
+.pick-quick{display:flex;gap:14px;padding:4px 2px 0}
+.split-prev{display:flex;align-items:center;gap:6px;padding:11px 14px;border-radius:14px;background:var(--h0);font-size:14px;transition:background .3s,color .3s}
+.split-prev b{font:700 18px "Space Grotesk",sans-serif}
+.split-prev.warn{background:#ffe1e3;color:#b3202b;animation:shake 1.4s ease-in-out 1}
+.split-tag{grid-column:1/-1;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);margin-top:6px;min-width:0}
+.split-tag .av{width:20px;height:20px;font-size:10px;margin-right:-6px;border-width:1.5px}
+.split-tag i{font-style:normal;margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-i.now .split-tag{color:#333}
+.share-line{display:block;font-size:12px;color:var(--mut);font-weight:400}
+@media(hover:hover){.pick:hover{transform:translateY(-2px)}}
